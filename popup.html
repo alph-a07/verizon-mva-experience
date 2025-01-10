@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Custom User Agent & Web Params</title>
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <div class="top-bar">
+            <span class="title">Custom UA & Params</span>
+            <button id="toggleExtension">Enable</button>
+            <button id="refreshPage">Refresh</button>
+        </div>
+
+        <div class="user-agent-section">
+            <label for="userAgent">Select User Agent</label>
+            <select id="userAgent">
+                <option value="default">Default</option>
+                <option value="mobile">Mobile</option>
+                <option value="desktop">Desktop</option>
+            </select>
+        </div>
+
+        <div class="web-params-section">
+            <h3>Web Params</h3>
+            <button id="addParam">Add Param</button>
+            <div id="webParams"></div>
+        </div>
+
+        <script src="popup.js"></script>
+    </body>
+</html>

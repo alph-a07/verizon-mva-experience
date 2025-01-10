@@ -1,0 +1,14 @@
+{
+    "manifest_version": 3,
+    "name": "Verizon MVA Experience",
+    "version": "1.0",
+    "description": "Set custom user agents and inject web parameters.",
+    "permissions": ["storage", "webRequest", "webRequestBlocking", "activeTab", "scripting"],
+    "host_permissions": ["<all_urls>"],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html"
+    }
+}
