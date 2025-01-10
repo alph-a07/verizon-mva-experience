@@ -1,10 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
+    chrome.storage.local.get('isEnabled', data => {
+        const isEnabled = data.isEnabled !== false; // Default to true if not set
+        document.getElementById('toggleExtension').textContent = isEnabled ? 'Disable' : 'Enable';
+        chrome.runtime.sendMessage({ action: 'toggleExtension', isEnabled });
+    });
 });
 
 document.getElementById('toggleExtension').addEventListener('click', e => {
     const isEnabled = e.target.textContent === 'Enable';
     e.target.textContent = isEnabled ? 'Disable' : 'Enable';
+    chrome.storage.local.set({ isEnabled });
     chrome.runtime.sendMessage({ action: 'toggleExtension', isEnabled });
 });
 
