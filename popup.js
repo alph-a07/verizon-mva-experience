@@ -1,3 +1,7 @@
+document.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+});
+
 document.getElementById('toggleExtension').addEventListener('click', e => {
     const isEnabled = e.target.textContent === 'Enable';
     e.target.textContent = isEnabled ? 'Disable' : 'Enable';
@@ -9,7 +13,9 @@ document.getElementById('refreshPage').addEventListener('click', () => {
 });
 
 document.getElementById('userAgent').addEventListener('change', e => {
-    chrome.runtime.sendMessage({ action: 'updateUserAgent', userAgent: e.target.value });
+    const userAgent = e.target.value;
+    chrome.runtime.sendMessage({ action: 'updateUserAgent', userAgent });
+    saveSettings();
 });
 
 document.getElementById('addParam').addEventListener('click', () => {
@@ -28,16 +34,55 @@ document.getElementById('addParam').addEventListener('click', () => {
 
     row.querySelector('.delete-param').addEventListener('click', () => {
         row.remove();
+        saveSettings();
     });
 
-    saveParams();
+    row.querySelectorAll('input').forEach(input => {
+        input.addEventListener('change', saveSettings);
+    });
+
+    saveSettings();
 });
 
-function saveParams() {
+function saveSettings() {
+    const userAgent = document.getElementById('userAgent').value;
     const params = Array.from(document.querySelectorAll('.web-param-row')).map(row => ({
         enabled: row.querySelector('.param-enable').checked,
         key: row.querySelector('.param-key').value,
         value: row.querySelector('.param-value').value,
     }));
-    chrome.runtime.sendMessage({ action: 'updateWebParams', webParams: params });
+    chrome.storage.local.set({ userAgent, webParams: params });
+}
+
+function loadSettings() {
+    chrome.storage.local.get(['userAgent', 'webParams'], data => {
+        if (data.userAgent) {
+            document.getElementById('userAgent').value = data.userAgent;
+        }
+        if (data.webParams) {
+            const container = document.getElementById('webParams');
+            data.webParams.forEach(param => {
+                const row = document.createElement('div');
+                row.className = 'web-param-row';
+
+                row.innerHTML = `
+                  <input type="checkbox" class="param-enable" ${param.enabled ? 'checked' : ''} />
+                  <input type="text" class="param-key" placeholder="Key" value="${param.key}" />
+                  <input type="text" class="param-value" placeholder="Value" value="${param.value}" />
+                  <button class="delete-param">X</button>
+                `;
+
+                container.appendChild(row);
+
+                row.querySelector('.delete-param').addEventListener('click', () => {
+                    row.remove();
+                    saveSettings();
+                });
+
+                row.querySelectorAll('input').forEach(input => {
+                    input.addEventListener('change', saveSettings);
+                });
+            });
+        }
+    });
 }
