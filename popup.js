@@ -64,6 +64,7 @@ function loadSettings() {
     chrome.storage.local.get(['userAgent', 'webParams'], data => {
         if (data.userAgent) {
             document.getElementById('userAgent').value = data.userAgent;
+            chrome.runtime.sendMessage({ action: 'updateUserAgent', userAgent: data.userAgent });
         }
         if (data.webParams) {
             const container = document.getElementById('webParams');
