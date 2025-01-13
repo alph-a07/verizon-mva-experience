@@ -1,9 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const userAgentInput = document.getElementById('user-agent-input');
+    const userAgentSelect = document.getElementById('user-agent-select');
     const switchButton = document.getElementById('switch-button');
 
+    // Load the saved user agent from storage
+    chrome.storage.local.get('userAgent', data => {
+        if (data.userAgent) {
+            userAgentSelect.value = data.userAgent;
+        }
+    });
+
     switchButton.addEventListener('click', () => {
-        const newUserAgent = userAgentInput.value;
+        const newUserAgent = userAgentSelect.value;
         console.log('Popup sending message to switch user agent:', newUserAgent);
 
         chrome.runtime.sendMessage({ action: 'switchUserAgent', userAgent: newUserAgent }, response => {
@@ -15,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (response.success) {
                 alert('User agent switched to: ' + newUserAgent);
+                // Save the selected user agent to storage
+                chrome.storage.local.set({ userAgent: newUserAgent });
             } else {
                 alert('Failed to switch user agent: ' + (response.error || 'Unknown error'));
             }
