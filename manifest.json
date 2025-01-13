@@ -1,14 +1,21 @@
 {
     "manifest_version": 3,
-    "name": "Verizon MVA Experience",
+    "name": "User Agent Switcher",
     "version": "1.0",
-    "description": "Set custom user agents and inject web parameters.",
-    "permissions": ["declarativeNetRequest", "activeTab", "storage", "scripting"],
+    "description": "A Chrome extension to switch the user agent of subsequent requests.",
+    "permissions": ["declarativeNetRequest", "declarativeNetRequestWithHostAccess", "declarativeNetRequestFeedback", "storage"],
     "host_permissions": ["<all_urls>"],
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "background.js",
+        "type": "module"
     },
     "action": {
         "default_popup": "popup.html"
-    }
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content.js"]
+        }
+    ]
 }

@@ -1,45 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
-        <title>Custom User Agent & Web Params</title>
-        <link rel="stylesheet" href="styles.css" />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>User Agent Switcher</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                width: 200px;
+                padding: 10px;
+            }
+            button {
+                margin-top: 10px;
+                padding: 5px;
+                width: 100%;
+            }
+        </style>
     </head>
     <body>
-        <div class="top-bar">
-            <span class="title">Custom UA & Params</span>
-            <button id="toggleExtension">Enable</button>
-            <button id="refreshPage">Refresh</button>
-        </div>
-
-        <div class="user-agent-section">
-            <label for="userAgent">Select User Agent</label>
-            <select id="userAgent">
-                <option value="default">Default</option>
-                <option
-                    value="Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
-                >
-                    iPhone
-                </option>
-                <option
-                    value="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36"
-                >
-                    Samsung Galaxy S10
-                </option>
-                <option
-                    value="Mozilla/5.0 (Linux; Android 9; Pixel 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36"
-                >
-                    Google Pixel 3
-                </option>
-                <!-- Add more user agents as needed -->
-            </select>
-        </div>
-
-        <div class="web-params-section">
-            <h3>Web Params</h3>
-            <button id="addParam">Add Param</button>
-            <div id="webParams"></div>
-        </div>
-
+        <h1>User Agent Switcher</h1>
+        <label for="user-agent-input">Enter User Agent:</label>
+        <input type="text" id="user-agent-input" placeholder="User Agent String" />
+        <button id="switch-button">Switch User Agent</button>
         <script src="popup.js"></script>
     </body>
 </html>
