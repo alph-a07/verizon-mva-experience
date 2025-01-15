@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "User Agent Switcher",
+    "name": "MVA Experience",
     "version": "1.0",
     "description": "A Chrome extension to switch the user agent of subsequent requests.",
     "permissions": [

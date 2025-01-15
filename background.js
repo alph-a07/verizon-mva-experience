@@ -8,9 +8,11 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log('Extension installed');
-    switchUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
-        .then(() => console.log('Initial user agent set'))
-        .catch(error => console.error('Failed to set initial user agent:', error));
+    // Initialize with default settings
+    chrome.storage.local.set({
+        userAgent: 'default',
+        enabled: true,
+    });
 });
 
 // Add tab reload listener
@@ -34,67 +36,74 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 function switchUserAgent(userAgent) {
     return new Promise((resolve, reject) => {
-        // First update network level UA
-        const updateNetworkUA =
-            userAgent === 'default'
-                ? chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1] })
-                : chrome.declarativeNetRequest.updateDynamicRules({
-                      removeRuleIds: [1],
-                      addRules: [
-                          {
-                              id: 1,
-                              priority: 1,
-                              action: {
-                                  type: 'modifyHeaders',
-                                  requestHeaders: [
-                                      {
-                                          header: 'User-Agent',
-                                          operation: 'set',
-                                          value: userAgent,
-                                      },
-                                  ],
+        // Check if extension is enabled before switching
+        chrome.storage.local.get(['enabled'], data => {
+            if (data.enabled === false && userAgent !== 'default') {
+                reject(new Error('Extension is disabled'));
+                return;
+            }
+            // First update network level UA
+            const updateNetworkUA =
+                userAgent === 'default'
+                    ? chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1] })
+                    : chrome.declarativeNetRequest.updateDynamicRules({
+                          removeRuleIds: [1],
+                          addRules: [
+                              {
+                                  id: 1,
+                                  priority: 1,
+                                  action: {
+                                      type: 'modifyHeaders',
+                                      requestHeaders: [
+                                          {
+                                              header: 'User-Agent',
+                                              operation: 'set',
+                                              value: userAgent,
+                                          },
+                                      ],
+                                  },
+                                  condition: {
+                                      urlFilter: '*',
+                                      resourceTypes: [
+                                          'main_frame',
+                                          'sub_frame',
+                                          'stylesheet',
+                                          'script',
+                                          'image',
+                                          'font',
+                                          'object',
+                                          'xmlhttprequest',
+                                          'ping',
+                                          'csp_report',
+                                          'media',
+                                          'websocket',
+                                          'other',
+                                      ],
+                                  },
                               },
-                              condition: {
-                                  urlFilter: '*',
-                                  resourceTypes: [
-                                      'main_frame',
-                                      'sub_frame',
-                                      'stylesheet',
-                                      'script',
-                                      'image',
-                                      'font',
-                                      'object',
-                                      'xmlhttprequest',
-                                      'ping',
-                                      'csp_report',
-                                      'media',
-                                      'websocket',
-                                      'other',
-                                  ],
-                              },
-                          },
-                      ],
-                  });
+                          ],
+                      });
 
-        updateNetworkUA
-            .then(() => {
-                // Then update browser level UA in all tabs
-                chrome.tabs.query({}, tabs => {
-                    const updatePromises = tabs.map(tab =>
-                        chrome.tabs
-                            .sendMessage(tab.id, {
-                                action: 'switchUserAgent',
-                                userAgent: userAgent,
-                            })
-                            .catch(err => console.warn(`Failed to update tab ${tab.id}:`, err)),
-                    );
+            updateNetworkUA
+                .then(() => {
+                    // Then update browser level UA in all tabs
+                    chrome.tabs.query({}, tabs => {
+                        const updatePromises = tabs.map(tab =>
+                            chrome.tabs
+                                .sendMessage(tab.id, {
+                                    action: 'switchUserAgent',
+                                    userAgent: userAgent,
+                                })
+                                .catch(err => console.warn(`Failed to update tab ${tab.id}:`, err)),
+                        );
 
-                    Promise.all(updatePromises)
-                        .then(() => resolve())
-                        .catch(reject);
-                });
-            })
-            .catch(reject);
+                        Promise.all(updatePromises)
+                            .then(() => resolve())
+                            .catch(reject);
+                    });
+                })
+                .catch(reject);
+        });
     });
 }
 
@@ -116,6 +125,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.error('Failed to switch user agent:', error);
                 sendResponse({ success: false, error: error.message });
             });
+        return true;
+    } else if (request.action === 'toggleExtension') {
+        if (!request.enabled) {
+            // Disable: Reset to default UA and remove rules
+            switchUserAgent('default')
+                .then(() => sendResponse({ success: true }))
+                .catch(error => sendResponse({ success: false, error: error.message }));
+        } else {
+            // Enable: Restore previous UA if any
+            chrome.storage.local.get('userAgent', data => {
+                if (data.userAgent && data.userAgent !== 'default') {
+                    switchUserAgent(data.userAgent)
+                        .then(() => sendResponse({ success: true }))
+                        .catch(error => sendResponse({ success: false, error: error.message }));
+                }
+            });
+        }
         return true;
     } else {
         console.error('Unknown action:', request.action);

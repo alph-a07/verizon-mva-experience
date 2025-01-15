@@ -5,39 +5,119 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>User Agent Switcher</title>
         <style>
-            body {
-                font-family: Arial, sans-serif;
-                width: 200px;
-                padding: 10px;
+            :root {
+                --primary: #f50a22;
+                --primary-hover: #d00920;
+                --bg-color: #ffffff;
+                --text-color: #333333;
+                --border-color: #e0e0e0;
             }
-            button {
-                margin-top: 10px;
-                padding: 5px;
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+                width: 300px;
+                padding: 16px;
+                margin: 0;
+                background: var(--bg-color);
+                color: var(--text-color);
+            }
+
+            .toggle-container {
+                margin-bottom: 20px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            h1 {
+                font-size: 18px;
+                margin: 0 0 16px 0;
+                color: var(--primary);
+            }
+
+            label {
+                display: block;
+                margin-bottom: 8px;
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            select {
                 width: 100%;
+                padding: 8px 12px;
+                border: 2px solid var(--border-color);
+                border-radius: 6px;
+                font-size: 14px;
+                margin-bottom: 16px;
+                background-color: white;
+                cursor: pointer;
+                transition: border-color 0.2s;
+            }
+
+            select:hover {
+                border-color: var(--primary);
+            }
+
+            select:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(245, 10, 34, 0.1);
+            }
+
+            button {
+                width: 100%;
+                padding: 10px;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                background: var(--primary);
+                color: white;
+                margin-top: 8px;
+            }
+
+            button:hover {
+                background: var(--primary-hover);
+                transform: translateY(-1px);
+            }
+
+            button:active {
+                transform: translateY(0);
+            }
+
+            #toggleExtension {
+                background: transparent;
+                border: 2px solid var(--primary);
+                color: var(--primary);
+            }
+
+            #toggleExtension:hover {
+                background: rgba(245, 10, 34, 0.1);
+            }
+
+            .disabled {
+                opacity: 0.6;
+                pointer-events: none;
+            }
+
+            select:disabled,
+            button:disabled {
+                background-color: var(--border-color);
+                cursor: not-allowed;
+                transform: none;
             }
         </style>
     </head>
     <body>
-        <h1>User Agent Switcher</h1>
+        <div class="toggle-container">
+            <button id="toggleExtension">Disable Extension</button>
+        </div>
+        <h1>MVA Experience</h1>
         <label for="user-agent-select">Select User Agent:</label>
         <select id="user-agent-select">
-            <option value="default">Reset to Browser Default</option>
-            <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36">
-                Windows 10 Chrome
-            </option>
-            <option
-                value="Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
-            >
-                iPhone
-            </option>
-            <option
-                value="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36"
-            >
-                Samsung Galaxy S10
-            </option>
-            <option value="Mozilla/5.0 (Linux; Android 9; Pixel 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36">
-                Google Pixel 3
-            </option>
+            <option value="default">Browser Default</option>
+            <option value="MY_VZW_APP;Android;14;o1s;SM-G991B;20.5.4;VZW-MFA-ANDROID">VZW Android 14</option>
         </select>
         <button id="switch-button">Switch User Agent</button>
         <script src="popup.js"></script>
