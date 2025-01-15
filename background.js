@@ -15,74 +15,67 @@ chrome.runtime.onInstalled.addListener(() => {
 
 function switchUserAgent(userAgent) {
     return new Promise((resolve, reject) => {
-        // If default is selected, remove all rules to restore browser's default UA
-        if (userAgent === 'default') {
-            chrome.declarativeNetRequest.updateDynamicRules(
-                {
-                    removeRuleIds: [1],
-                },
-                () => {
-                    if (chrome.runtime.lastError) {
-                        console.error('Error:', chrome.runtime.lastError);
-                        reject(chrome.runtime.lastError);
-                    } else {
-                        console.log('Rules removed successfully');
-                        resolve();
-                    }
-                },
-            );
-            return;
-        }
+        // First update network level UA
+        const updateNetworkUA =
+            userAgent === 'default'
+                ? chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1] })
+                : chrome.declarativeNetRequest.updateDynamicRules({
+                      removeRuleIds: [1],
+                      addRules: [
+                          {
+                              id: 1,
+                              priority: 1,
+                              action: {
+                                  type: 'modifyHeaders',
+                                  requestHeaders: [
+                                      {
+                                          header: 'User-Agent',
+                                          operation: 'set',
+                                          value: userAgent,
+                                      },
+                                  ],
+                              },
+                              condition: {
+                                  urlFilter: '*',
+                                  resourceTypes: [
+                                      'main_frame',
+                                      'sub_frame',
+                                      'stylesheet',
+                                      'script',
+                                      'image',
+                                      'font',
+                                      'object',
+                                      'xmlhttprequest',
+                                      'ping',
+                                      'csp_report',
+                                      'media',
+                                      'websocket',
+                                      'other',
+                                  ],
+                              },
+                          },
+                      ],
+                  });
 
-        // Existing rule update logic for custom user agents
-        chrome.declarativeNetRequest.updateDynamicRules(
-            {
-                removeRuleIds: [1],
-                addRules: [
-                    {
-                        id: 1,
-                        priority: 1,
-                        action: {
-                            type: 'modifyHeaders',
-                            requestHeaders: [
-                                {
-                                    header: 'User-Agent',
-                                    operation: 'set',
-                                    value: userAgent,
-                                },
-                            ],
-                        },
-                        condition: {
-                            urlFilter: '*',
-                            resourceTypes: [
-                                'main_frame',
-                                'sub_frame',
-                                'stylesheet',
-                                'script',
-                                'image',
-                                'font',
-                                'object',
-                                'xmlhttprequest',
-                                'ping',
-                                'csp_report',
-                                'media',
-                                'websocket',
-                                'other',
-                            ],
-                        },
-                    },
-                ],
-            },
-            () => {
-                if (chrome.runtime.lastError) {
-                    console.error('Error:', chrome.runtime.lastError);
-                    reject(chrome.runtime.lastError);
-                } else {
-                    console.log('Rule added successfully');
-                    resolve();
-                }
-            },
-        );
+        updateNetworkUA
+            .then(() => {
+                // Then update browser level UA in all tabs
+                chrome.tabs.query({}, tabs => {
+                    const updatePromises = tabs.map(tab =>
+                        chrome.tabs
+                            .sendMessage(tab.id, {
+                                action: 'switchUserAgent',
+                                userAgent: userAgent,
+                            })
+                            .catch(err => console.warn(`Failed to update tab ${tab.id}:`, err)),
+                    );
+
+                    Promise.all(updatePromises)
+                        .then(() => resolve())
+                        .catch(reject);
+                });
+            })
+            .catch(reject);
     });
 }
 
