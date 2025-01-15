@@ -3,7 +3,14 @@
     "name": "User Agent Switcher",
     "version": "1.0",
     "description": "A Chrome extension to switch the user agent of subsequent requests.",
-    "permissions": ["declarativeNetRequest", "declarativeNetRequestWithHostAccess", "declarativeNetRequestFeedback", "storage", "tabs"],
+    "permissions": [
+        "declarativeNetRequest",
+        "declarativeNetRequestWithHostAccess",
+        "declarativeNetRequestFeedback",
+        "storage",
+        "tabs",
+        "webNavigation"
+    ],
     "host_permissions": ["<all_urls>"],
     "background": {
         "service_worker": "background.js",

@@ -13,6 +13,25 @@ chrome.runtime.onInstalled.addListener(() => {
         .catch(error => console.error('Failed to set initial user agent:', error));
 });
 
+// Add tab reload listener
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'loading') {
+        chrome.storage.local.get('userAgent', data => {
+            if (data.userAgent && data.userAgent !== 'default') {
+                // Small delay to ensure content script is ready
+                setTimeout(() => {
+                    chrome.tabs
+                        .sendMessage(tabId, {
+                            action: 'switchUserAgent',
+                            userAgent: data.userAgent,
+                        })
+                        .catch(err => console.warn(`Failed to update reloaded tab ${tabId}:`, err));
+                }, 100);
+            }
+        });
+    }
+});
+
 function switchUserAgent(userAgent) {
     return new Promise((resolve, reject) => {
         // First update network level UA
