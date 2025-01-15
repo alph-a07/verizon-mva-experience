@@ -15,6 +15,26 @@ chrome.runtime.onInstalled.addListener(() => {
 
 function switchUserAgent(userAgent) {
     return new Promise((resolve, reject) => {
+        // If default is selected, remove all rules to restore browser's default UA
+        if (userAgent === 'default') {
+            chrome.declarativeNetRequest.updateDynamicRules(
+                {
+                    removeRuleIds: [1],
+                },
+                () => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error:', chrome.runtime.lastError);
+                        reject(chrome.runtime.lastError);
+                    } else {
+                        console.log('Rules removed successfully');
+                        resolve();
+                    }
+                },
+            );
+            return;
+        }
+
+        // Existing rule update logic for custom user agents
         chrome.declarativeNetRequest.updateDynamicRules(
             {
                 removeRuleIds: [1],

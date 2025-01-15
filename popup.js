@@ -21,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             if (response.success) {
-                alert('User agent switched to: ' + newUserAgent);
-                // Save the selected user agent to storage
+                const message = newUserAgent === 'default' ? 'Reset to browser default user agent' : 'User agent switched to: ' + newUserAgent;
+                alert(message);
                 chrome.storage.local.set({ userAgent: newUserAgent });
             } else {
                 alert('Failed to switch user agent: ' + (response.error || 'Unknown error'));
