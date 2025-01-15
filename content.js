@@ -3,30 +3,22 @@
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'switchUserAgent') {
+        // Inject the script file
         const script = document.createElement('script');
-        script.textContent = `
-            (function() {
-                // Store original getter
-                const originalGetter = Object.getOwnPropertyDescriptor(Navigator.prototype, 'userAgent').get;
-                
-                // Override navigator.userAgent
-                Object.defineProperty(Navigator.prototype, 'userAgent', {
-                    get: function() {
-                        return '${request.userAgent === 'default' ? originalGetter.call(navigator) : request.userAgent}';
-                    }
-                });
-
-                // Also override window.navigator
-                Object.defineProperty(window, 'navigator', {
-                    value: navigator,
-                    writable: false,
-                    configurable: false
-                });
-            })();
-        `;
-        document.documentElement.appendChild(script);
-        script.remove();
-        sendResponse({ success: true });
+        script.src = chrome.runtime.getURL('inject.js');
+        script.onload = () => {
+            // After script is loaded, send the user agent via postMessage
+            window.postMessage(
+                {
+                    type: 'SET_USER_AGENT',
+                    userAgent: request.userAgent,
+                },
+                '*',
+            );
+            script.remove();
+            sendResponse({ success: true });
+        };
+        (document.head || document.documentElement).appendChild(script);
+        return true;
     }
-    return true;
 });
