@@ -31,7 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.success) {
                 const message = newUserAgent === 'default' ? 'Reset to browser default user agent' : 'User agent switched to: ' + newUserAgent;
                 alert(message);
-                chrome.storage.local.set({ userAgent: newUserAgent });
+                chrome.storage.local.set({ userAgent: newUserAgent }, () => {
+                    // Auto-refresh all tabs
+                    chrome.tabs.query({}, tabs => {
+                        tabs.forEach(tab => {
+                            chrome.tabs.reload(tab.id);
+                        });
+                    });
+                });
             } else {
                 alert('Failed to switch user agent: ' + (response.error || 'Unknown error'));
             }

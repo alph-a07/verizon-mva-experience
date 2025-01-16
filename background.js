@@ -18,8 +18,8 @@ chrome.runtime.onInstalled.addListener(() => {
 // Add tab reload listener
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'loading') {
-        chrome.storage.local.get('userAgent', data => {
-            if (data.userAgent && data.userAgent !== 'default') {
+        chrome.storage.local.get(['userAgent', 'enabled'], data => {
+            if (data.enabled !== false && data.userAgent && data.userAgent !== 'default') {
                 // Small delay to ensure content script is ready
                 setTimeout(() => {
                     chrome.tabs
@@ -97,7 +97,7 @@ function switchUserAgent(userAgent) {
 
 function updateDevToolsUA(userAgent) {
     return new Promise(resolve => {
-        chrome.tabs.query({}, tabs => {
+        chrome.tabs.query({ url: '*://*.verizon.com/*' }, tabs => {
             const promises = tabs.map(tab => {
                 if (attachedTabs.has(tab.id)) {
                     return chrome.debugger
@@ -132,6 +132,8 @@ function updateNetworkUA(userAgent) {
                       },
                       condition: {
                           urlFilter: '*',
+                          domains: ['verizon.com'],
+                          initiatorDomains: ['verizon.com'],
                           resourceTypes: [
                               'main_frame',
                               'sub_frame',
@@ -155,7 +157,7 @@ function updateNetworkUA(userAgent) {
 
 function updatePageUA(userAgent) {
     return new Promise(resolve => {
-        chrome.tabs.query({}, tabs => {
+        chrome.tabs.query({ url: '*://*.verizon.com/*' }, tabs => {
             const updatePromises = tabs.map(tab =>
                 chrome.tabs
                     .sendMessage(tab.id, {

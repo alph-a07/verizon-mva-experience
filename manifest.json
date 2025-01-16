@@ -12,7 +12,7 @@
         "webNavigation",
         "debugger"
     ],
-    "host_permissions": ["<all_urls>"],
+    "host_permissions": ["*://*.verizon.com/*"],
     "background": {
         "service_worker": "background.js",
         "type": "module"
@@ -23,12 +23,12 @@
     "web_accessible_resources": [
         {
             "resources": ["inject.js"],
-            "matches": ["<all_urls>"]
+            "matches": ["*://*.verizon.com/*"]
         }
     ],
     "content_scripts": [
         {
-            "matches": ["<all_urls>"],
+            "matches": ["*://*.verizon.com/*"],
             "js": ["content.js"],
             "run_at": "document_start",
             "all_frames": true
