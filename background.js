@@ -132,8 +132,8 @@ function updateNetworkUA(userAgent) {
                       },
                       condition: {
                           urlFilter: '*',
-                          domains: ['verizon.com'],
                           initiatorDomains: ['verizon.com'],
+                          requestDomains: ['verizon.com'],
                           resourceTypes: [
                               'main_frame',
                               'sub_frame',
