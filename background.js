@@ -34,75 +34,140 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
 });
 
+// Track attached debugger targets
+const attachedTabs = new Set();
+
+// Attach debugger when new tabs are created
+chrome.tabs.onCreated.addListener(tab => {
+    attachDebugger(tab.id);
+});
+
+// Reattach debugger on tab updates if needed
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (changeInfo.status === 'loading' && !attachedTabs.has(tabId)) {
+        attachDebugger(tabId);
+    }
+});
+
+function attachDebugger(tabId) {
+    chrome.debugger.attach({ tabId }, '1.3', () => {
+        if (chrome.runtime.lastError) {
+            console.warn('Failed to attach debugger:', chrome.runtime.lastError);
+            return;
+        }
+        attachedTabs.add(tabId);
+
+        // Get current user agent setting
+        chrome.storage.local.get(['userAgent', 'enabled'], data => {
+            if (data.enabled !== false && data.userAgent && data.userAgent !== 'default') {
+                // Force user agent through DevTools protocol
+                chrome.debugger.sendCommand({ tabId }, 'Network.setUserAgentOverride', { userAgent: data.userAgent });
+            }
+        });
+    });
+}
+
+// Clean up when tabs are closed
+chrome.tabs.onRemoved.addListener(tabId => {
+    attachedTabs.delete(tabId);
+    chrome.debugger.detach({ tabId });
+});
+
 function switchUserAgent(userAgent) {
     return new Promise((resolve, reject) => {
-        // Check if extension is enabled before switching
         chrome.storage.local.get(['enabled'], data => {
             if (data.enabled === false && userAgent !== 'default') {
                 reject(new Error('Extension is disabled'));
                 return;
             }
-            // First update network level UA
-            const updateNetworkUA =
-                userAgent === 'default'
-                    ? chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1] })
-                    : chrome.declarativeNetRequest.updateDynamicRules({
-                          removeRuleIds: [1],
-                          addRules: [
+
+            Promise.all([
+                // Update network rules
+                updateNetworkUA(userAgent),
+                // Update DevTools for all tabs
+                updateDevToolsUA(userAgent),
+                // Update page-level UA
+                updatePageUA(userAgent),
+            ])
+                .then(resolve)
+                .catch(reject);
+        });
+    });
+}
+
+function updateDevToolsUA(userAgent) {
+    return new Promise(resolve => {
+        chrome.tabs.query({}, tabs => {
+            const promises = tabs.map(tab => {
+                if (attachedTabs.has(tab.id)) {
+                    return chrome.debugger
+                        .sendCommand({ tabId: tab.id }, 'Network.setUserAgentOverride', userAgent === 'default' ? {} : { userAgent })
+                        .catch(err => console.warn(`Failed to update DevTools UA for tab ${tab.id}:`, err));
+                }
+                return Promise.resolve();
+            });
+            Promise.all(promises).then(resolve);
+        });
+    });
+}
+
+function updateNetworkUA(userAgent) {
+    return userAgent === 'default'
+        ? chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1] })
+        : chrome.declarativeNetRequest.updateDynamicRules({
+              removeRuleIds: [1],
+              addRules: [
+                  {
+                      id: 1,
+                      priority: 1,
+                      action: {
+                          type: 'modifyHeaders',
+                          requestHeaders: [
                               {
-                                  id: 1,
-                                  priority: 1,
-                                  action: {
-                                      type: 'modifyHeaders',
-                                      requestHeaders: [
-                                          {
-                                              header: 'User-Agent',
-                                              operation: 'set',
-                                              value: userAgent,
-                                          },
-                                      ],
-                                  },
-                                  condition: {
-                                      urlFilter: '*',
-                                      resourceTypes: [
-                                          'main_frame',
-                                          'sub_frame',
-                                          'stylesheet',
-                                          'script',
-                                          'image',
-                                          'font',
-                                          'object',
-                                          'xmlhttprequest',
-                                          'ping',
-                                          'csp_report',
-                                          'media',
-                                          'websocket',
-                                          'other',
-                                      ],
-                                  },
+                                  header: 'User-Agent',
+                                  operation: 'set',
+                                  value: userAgent,
                               },
                           ],
-                      });
+                      },
+                      condition: {
+                          urlFilter: '*',
+                          resourceTypes: [
+                              'main_frame',
+                              'sub_frame',
+                              'stylesheet',
+                              'script',
+                              'image',
+                              'font',
+                              'object',
+                              'xmlhttprequest',
+                              'ping',
+                              'csp_report',
+                              'media',
+                              'websocket',
+                              'other',
+                          ],
+                      },
+                  },
+              ],
+          });
+}
 
-            updateNetworkUA
-                .then(() => {
-                    // Then update browser level UA in all tabs
-                    chrome.tabs.query({}, tabs => {
-                        const updatePromises = tabs.map(tab =>
-                            chrome.tabs
-                                .sendMessage(tab.id, {
-                                    action: 'switchUserAgent',
-                                    userAgent: userAgent,
-                                })
-                                .catch(err => console.warn(`Failed to update tab ${tab.id}:`, err)),
-                        );
+function updatePageUA(userAgent) {
+    return new Promise(resolve => {
+        chrome.tabs.query({}, tabs => {
+            const updatePromises = tabs.map(tab =>
+                chrome.tabs
+                    .sendMessage(tab.id, {
+                        action: 'switchUserAgent',
+                        userAgent: userAgent,
+                    })
+                    .catch(err => console.warn(`Failed to update tab ${tab.id}:`, err)),
+            );
 
-                        Promise.all(updatePromises)
-                            .then(() => resolve())
-                            .catch(reject);
-                    });
-                })
-                .catch(reject);
+            Promise.all(updatePromises)
+                .then(() => resolve())
+                .catch(resolve);
         });
     });
 }

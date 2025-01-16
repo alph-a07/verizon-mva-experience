@@ -9,7 +9,8 @@
         "declarativeNetRequestFeedback",
         "storage",
         "tabs",
-        "webNavigation"
+        "webNavigation",
+        "debugger"
     ],
     "host_permissions": ["<all_urls>"],
     "background": {
