@@ -32,8 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const message = newUserAgent === 'default' ? 'Reset to browser default user agent' : 'User agent switched to: ' + newUserAgent;
                 alert(message);
                 chrome.storage.local.set({ userAgent: newUserAgent }, () => {
-                    // Auto-refresh all tabs
-                    chrome.tabs.query({}, tabs => {
+                    // Auto-refresh only verizon.com tabs
+                    chrome.tabs.query({ url: '*://*.verizon.com/*' }, tabs => {
                         tabs.forEach(tab => {
                             chrome.tabs.reload(tab.id);
                         });
