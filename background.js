@@ -277,3 +277,66 @@ async function handleExtensionToggle(enabled, sendResponse) {
         sendResponse({ success: false, error: error.message });
     }
 }
+
+chrome.storage.local.get(['userAgent'], function (result) {
+    if (result.userAgent) {
+        updateUserAgentRules(result.userAgent);
+    }
+});
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (changes.userAgent) {
+        updateUserAgentRules(changes.userAgent.newValue);
+    }
+});
+
+chrome.webNavigation.onBeforeNavigate.addListener(details => {
+    if (details.frameId === 0) {
+        // Only handle main frame navigation
+        chrome.storage.local.get(['userAgent'], function (result) {
+            if (result.userAgent) {
+                updateUserAgentRules(result.userAgent);
+            }
+        });
+    }
+});
+
+function updateUserAgentRules(userAgent) {
+    chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [1], // Remove existing rule
+        addRules: [
+            {
+                id: 1,
+                priority: 1,
+                action: {
+                    type: 'modifyHeaders',
+                    requestHeaders: [
+                        {
+                            header: 'User-Agent',
+                            operation: 'set',
+                            value: userAgent,
+                        },
+                    ],
+                },
+                condition: {
+                    urlFilter: '*verizon.com*',
+                    resourceTypes: [
+                        'main_frame',
+                        'sub_frame',
+                        'stylesheet',
+                        'script',
+                        'image',
+                        'font',
+                        'object',
+                        'xmlhttprequest',
+                        'ping',
+                        'csp_report',
+                        'media',
+                        'websocket',
+                        'other',
+                    ],
+                },
+            },
+        ],
+    });
+}
