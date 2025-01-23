@@ -1,37 +1,17 @@
 // This file contains the content script for the Chrome extension that interacts with the web page and communicates with the background script to apply user agent changes.
 
-// Add mobile frame to page
-function addMobileFrame() {
-    const frame = document.createElement('div');
-    frame.className = 'mobile-frame';
-    frame.style.display = 'none';
-    document.body.appendChild(frame);
-    return frame;
-}
-
-let mobileFrame = addMobileFrame();
-
-// Enhanced URL change detection
+// Track URL changes within the page
 let lastUrl = location.href;
-const urlObserver = new MutationObserver(() => {
+console.log('Content script initialized at:', lastUrl);
+
+// Watch for URL changes
+new MutationObserver(() => {
     if (location.href !== lastUrl) {
         console.log('URL changed from', lastUrl, 'to', location.href);
         lastUrl = location.href;
-        requestLatestUserAgent();
-    }
-});
-
-// Watch for both DOM changes and History API changes
-urlObserver.observe(document, { subtree: true, childList: true });
-window.addEventListener('popstate', requestLatestUserAgent);
-window.addEventListener('pushstate', requestLatestUserAgent);
-window.addEventListener('replacestate', requestLatestUserAgent);
-
-function requestLatestUserAgent() {
-    chrome.runtime.sendMessage({ action: 'getLatestUserAgent' }, response => {
-        if (response && response.userAgent) {
-            if (response.userAgent !== 'default') {
-                mobileFrame.style.display = 'block';
+        // Request latest user agent
+        chrome.runtime.sendMessage({ action: 'getLatestUserAgent' }, response => {
+            if (response && response.userAgent && response.userAgent !== 'default') {
                 window.postMessage(
                     {
                         type: 'SET_USER_AGENT',
@@ -39,20 +19,20 @@ function requestLatestUserAgent() {
                     },
                     '*',
                 );
-            } else {
-                mobileFrame.style.display = 'none';
             }
-        }
-    });
-}
+        });
+    }
+}).observe(document, { subtree: true, childList: true });
 
-// Enhanced message listener
+// Listen for messages from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('Content script received message:', request);
     if (request.action === 'switchUserAgent') {
+        // Inject the script file
         const script = document.createElement('script');
         script.src = chrome.runtime.getURL('inject.js');
         script.onload = () => {
+            console.log('Inject script loaded, setting user agent:', request.userAgent);
             window.postMessage(
                 {
                     type: 'SET_USER_AGENT',
@@ -61,10 +41,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 '*',
             );
             script.remove();
-
-            // Toggle mobile frame
-            mobileFrame.style.display = request.userAgent !== 'default' ? 'block' : 'none';
-
             sendResponse({ success: true });
         };
         (document.head || document.documentElement).appendChild(script);

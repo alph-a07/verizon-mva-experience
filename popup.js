@@ -32,26 +32,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 const message = newUserAgent === 'default' ? 'Reset to browser default user agent' : 'User agent switched to: ' + newUserAgent;
                 alert(message);
                 chrome.storage.local.set({ userAgent: newUserAgent }, () => {
+                    // Only refresh current tab if it's a verizon.com tab
                     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
                         const tab = tabs[0];
                         if (tab && tab.url && tab.url.includes('verizon.com')) {
                             chrome.tabs.reload(tab.id);
+                            // Open DevTools only if user agent is not default
                             if (newUserAgent !== 'default') {
                                 setTimeout(() => {
-                                    chrome.debugger.attach({ tabId: tab.id }, '1.3', () => {
-                                        chrome.debugger
-                                            .sendCommand({ tabId: tab.id }, 'Network.enable')
-                                            .then(() =>
-                                                chrome.debugger.sendCommand({ tabId: tab.id }, 'Emulation.setDeviceMetricsOverride', {
+                                    // Resizes the current window to simulate a mobile viewport
+                                    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+                                        if (tabs[0]) {
+                                            chrome.windows.update(
+                                                tabs[0].windowId,
+                                                {
                                                     width: 414,
                                                     height: 896,
-                                                    deviceScaleFactor: 3,
-                                                    mobile: true,
-                                                }),
-                                            )
-                                            .catch(err => console.warn('DevTools error:', err));
+                                                },
+                                                () => {
+                                                    // Attach debugger and emulate mobile metrics
+                                                    chrome.debugger.attach({ tabId: tabs[0].id }, '1.3', () => {
+                                                        chrome.debugger
+                                                            .sendCommand({ tabId: tabs[0].id }, 'Network.enable')
+                                                            .then(() =>
+                                                                chrome.debugger.sendCommand(
+                                                                    { tabId: tabs[0].id },
+                                                                    'Emulation.setDeviceMetricsOverride',
+                                                                    {
+                                                                        width: 414,
+                                                                        height: 896,
+                                                                        deviceScaleFactor: 3,
+                                                                        mobile: true,
+                                                                    },
+                                                                ),
+                                                            )
+                                                            .catch(err => console.warn('DevTools error:', err));
+                                                    });
+                                                },
+                                            );
+                                        }
                                     });
                                 }, 500);
+                            } else {
+                                // Resize window if user agent is default
+                                chrome.windows.update(tab.windowId, { state: 'maximized' });
                             }
                         }
                     });
