@@ -73,6 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                         }
                                     });
                                 }, 500);
+                            } else {
+                                // Resize window if user agent is default
+                                chrome.windows.update(tab.windowId, { state: 'maximized' });
                             }
                         }
                     });
@@ -98,6 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Refresh all Verizon tabs when disabled
                             chrome.tabs.query({ url: '*://*.verizon.com/*' }, tabs => {
                                 tabs.forEach(tab => chrome.tabs.reload(tab.id));
+                            });
+                            // Extension just got disabled - maximize window
+                            chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+                                if (tabs[0]) {
+                                    chrome.windows.update(tabs[0].windowId, { state: 'maximized' });
+                                }
                             });
                         }
                     },

@@ -24,8 +24,16 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     }
 });
 
-// Navigation monitoring
+// Navigation monitoring with enhanced logging
 chrome.webNavigation.onCommitted.addListener(details => {
+    console.log('Navigation committed:', details);
+    if (details.frameId === 0 && details.url.includes('verizon.com')) {
+        handleNavigation(details.tabId);
+    }
+});
+
+chrome.webNavigation.onHistoryStateUpdated.addListener(details => {
+    console.log('History state updated:', details);
     if (details.frameId === 0 && details.url.includes('verizon.com')) {
         handleNavigation(details.tabId);
     }
@@ -71,14 +79,33 @@ async function handleTabUpdate(tabId) {
     }
 }
 
+// Enhanced navigation handler
 async function handleNavigation(tabId) {
     try {
+        console.log('Handling navigation for tab:', tabId);
         const data = await chrome.storage.local.get(['userAgent', 'enabled']);
+        console.log('Current settings:', data);
+
         if (data.enabled !== false && data.userAgent && data.userAgent !== 'default') {
-            await Promise.all([updateNetworkUA(data.userAgent), updateDevToolsUA(data.userAgent), updatePageUA(data.userAgent)]);
+            console.log('Reapplying user agent:', data.userAgent);
+            await Promise.all([
+                updateNetworkUA(data.userAgent),
+                updateDevToolsUA(data.userAgent),
+                chrome.tabs
+                    .sendMessage(tabId, {
+                        action: 'switchUserAgent',
+                        userAgent: data.userAgent,
+                    })
+                    .catch(err => {
+                        console.log('Reinject content script due to error:', err);
+                        // If content script is not ready, wait and retry
+                        return new Promise(resolve => setTimeout(resolve, 100)).then(() => updatePageUA(data.userAgent));
+                    }),
+            ]);
+            console.log('User agent reapplied successfully');
         }
     } catch (err) {
-        console.warn(`Navigation handler error: ${err}`);
+        console.warn(`Navigation handler error for tab ${tabId}:`, err);
     }
 }
 
