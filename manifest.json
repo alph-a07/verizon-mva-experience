@@ -3,19 +3,10 @@
     "name": "MVA Experience",
     "version": "1.0",
     "description": "A Chrome extension to switch the user agent of subsequent requests.",
-    "permissions": [
-        "declarativeNetRequest",
-        "declarativeNetRequestWithHostAccess",
-        "declarativeNetRequestFeedback",
-        "storage",
-        "tabs",
-        "webNavigation",
-        "debugger"
-    ],
+    "permissions": ["declarativeNetRequest", "declarativeNetRequestWithHostAccess", "storage", "tabs", "debugger", "activeTab", "webNavigation"],
     "host_permissions": ["*://*.verizon.com/*"],
     "background": {
-        "service_worker": "background.js",
-        "type": "module"
+        "service_worker": "background.js"
     },
     "action": {
         "default_popup": "popup.html"
