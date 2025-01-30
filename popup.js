@@ -59,6 +59,21 @@ document.addEventListener('DOMContentLoaded', () => {
                                         }
                                     });
                                 }, 500);
+                            } else {
+                                // Reset dimensions when switching to default
+                                chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+                                    if (tabs[0]) {
+                                        chrome.debugger
+                                            .detach({ tabId: tabs[0].id })
+                                            .then(() => {
+                                                chrome.tabs.reload(tabs[0].id);
+                                            })
+                                            .catch(() => {
+                                                // If debugger wasn't attached, just reload
+                                                chrome.tabs.reload(tabs[0].id);
+                                            });
+                                    }
+                                });
                             }
                         }
                     });
@@ -81,9 +96,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     response => {
                         if (response.success && !newState) {
-                            // Refresh all Verizon tabs when disabled
+                            // Reset dimensions and refresh all Verizon tabs when disabled
                             chrome.tabs.query({ url: '*://*.verizon.com/*' }, tabs => {
-                                tabs.forEach(tab => chrome.tabs.reload(tab.id));
+                                tabs.forEach(tab => {
+                                    chrome.debugger
+                                        .detach({ tabId: tab.id })
+                                        .catch(() => {})
+                                        .finally(() => {
+                                            chrome.tabs.reload(tab.id);
+                                        });
+                                });
                             });
                             // Extension just got disabled - maximize window
                             chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
